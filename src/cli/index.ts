@@ -7,6 +7,7 @@ import {
   syncAvailabilityForCatalog,
 } from '@/services/availability-sync';
 import { syncMoviesCatalog } from '@/services/movie-ingestion';
+import { reindexAllMovies } from '@/services/search-indexer';
 
 function parseFlagValue(args: string[], prefix: string): string | undefined {
   const exact = args.find((a) => a.startsWith(`${prefix}=`));
@@ -45,7 +46,8 @@ async function main() {
         break;
       }
       case 'reindex-search': {
-        logger.info('reindex-search will be implemented in Phase 4');
+        const result = await reindexAllMovies();
+        logger.info(result, 'reindex-search completed');
         break;
       }
       default: {
