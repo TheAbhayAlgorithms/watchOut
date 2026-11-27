@@ -8,6 +8,7 @@ import {
 } from '@/services/availability-sync';
 import { syncMoviesCatalog } from '@/services/movie-ingestion';
 import { reindexAllMovies } from '@/services/search-indexer';
+import { createQueues } from '@/worker/queues';
 
 function parseFlagValue(args: string[], prefix: string): string | undefined {
   const exact = args.find((a) => a.startsWith(`${prefix}=`));
@@ -48,6 +49,20 @@ async function main() {
       case 'reindex-search': {
         const result = await reindexAllMovies();
         logger.info(result, 'reindex-search completed');
+        break;
+      }
+      case 'enqueue-bulk': {
+        const pagesRaw = parseFlagValue(args, '--pages');
+        const pages = pagesRaw ? Number.parseInt(pagesRaw, 10) : 50;
+        const { movieQueue } = createQueues();
+        await movieQueue.addBulk(
+          Array.from({ length: Math.min(500, Math.max(1, pages)) }, (_, idx) => ({
+            name: 'discover-page',
+            data: { page: idx + 1 },
+          }))
+        );
+        await movieQueue.close();
+        logger.info({ pages }, 'Enqueued bulk TMDB discover pages into BullMQ');
         break;
       }
       default: {

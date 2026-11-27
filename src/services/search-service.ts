@@ -1,3 +1,4 @@
+import { getOrSetCache } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { getMeiliClient } from '@/lib/meili';
 import { MOVIES_INDEX, MovieSearchDocument } from '@/services/search-indexer';
@@ -118,22 +119,24 @@ export async function searchMovies(params: SearchMoviesParams): Promise<SearchMo
 export async function getFilterOptions(countryCode = 'IN') {
   const country = countryCode.trim().toUpperCase();
 
-  const [genres, platforms] = await Promise.all([
-    prisma.genre.findMany({
-      orderBy: { name: 'asc' },
-      select: { name: true, slug: true },
-    }),
-    prisma.platform.findMany({
-      where: {
-        availability: {
-          some: { countryCode: country },
+  return getOrSetCache(`wtw:filters:${country}`, 600, async () => {
+    const [genres, platforms] = await Promise.all([
+      prisma.genre.findMany({
+        orderBy: { name: 'asc' },
+        select: { name: true, slug: true },
+      }),
+      prisma.platform.findMany({
+        where: {
+          availability: {
+            some: { countryCode: country },
+          },
         },
-      },
-      orderBy: [{ displayPriority: 'asc' }, { name: 'asc' }],
-      take: 30,
-      select: { id: true, name: true, slug: true, logoPath: true },
-    }),
-  ]);
+        orderBy: [{ displayPriority: 'asc' }, { name: 'asc' }],
+        take: 30,
+        select: { id: true, name: true, slug: true, logoPath: true },
+      }),
+    ]);
 
-  return { genres, platforms };
+    return { genres, platforms };
+  });
 }

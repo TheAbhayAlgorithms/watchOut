@@ -12,10 +12,12 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cli": "tsx src/cli/index.ts"
+    "cli": "tsx src/cli/index.ts",
+    "worker": "tsx src/worker/index.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "bullmq": "^5.81.6",
     "dotenv": "^16.6.1",
     "ioredis": "^5.4.1",
     "lucide-react": "^0.460.0",

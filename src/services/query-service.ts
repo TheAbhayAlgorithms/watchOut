@@ -1,4 +1,5 @@
 import { OfferType, Prisma, RoleType } from '@prisma/client';
+import { getOrSetCache } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { MovieCardItem } from '@/components/MovieCard';
 
@@ -47,8 +48,10 @@ export async function getMovieDetailForCountry(
   countryCode: string
 ): Promise<MovieDetailResult | null> {
   const country = countryCode.trim().toUpperCase();
+  const cacheKey = `wtw:movie:${movieId}:${country}`;
 
-  const movie = await prisma.movie.findUnique({
+  return getOrSetCache(cacheKey, 900, async () => {
+    const movie = await prisma.movie.findUnique({
     where: { id: movieId },
     include: {
       genres: { include: { genre: true } },
@@ -183,6 +186,7 @@ export async function getMovieDetailForCountry(
     lastCheckedAt: latestCheck ? latestCheck.toISOString() : null,
     similarAvailable,
   };
+  });
 }
 
 export async function getPlatformCatalog(params: {
