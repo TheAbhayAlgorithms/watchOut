@@ -2,6 +2,10 @@ import 'dotenv/config';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { TmdbConfigError } from '@/providers/tmdb-client';
+import {
+  DEFAULT_AVAILABILITY_COUNTRIES,
+  syncAvailabilityForCatalog,
+} from '@/services/availability-sync';
 import { syncMoviesCatalog } from '@/services/movie-ingestion';
 
 function parseFlagValue(args: string[], prefix: string): string | undefined {
@@ -27,7 +31,17 @@ async function main() {
         break;
       }
       case 'sync-availability': {
-        logger.info('sync-availability will be implemented in Phase 3');
+        const countriesRaw = parseFlagValue(args, '--countries');
+        const countries = countriesRaw
+          ? countriesRaw.split(',').map((c) => c.trim().toUpperCase()).filter(Boolean)
+          : DEFAULT_AVAILABILITY_COUNTRIES;
+        const limitRaw = parseFlagValue(args, '--limit');
+        const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 1000;
+        const result = await syncAvailabilityForCatalog({
+          countries,
+          limit: Number.isFinite(limit) && limit > 0 ? limit : 1000,
+        });
+        logger.info(result, 'sync-availability completed');
         break;
       }
       case 'reindex-search': {
