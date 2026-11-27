@@ -6,6 +6,7 @@ import {
   DEFAULT_AVAILABILITY_COUNTRIES,
   syncAvailabilityForCatalog,
 } from '@/services/availability-sync';
+import { seedDemoCatalog } from '@/services/demo-seed';
 import { syncMoviesCatalog } from '@/services/movie-ingestion';
 import { reindexAllMovies } from '@/services/search-indexer';
 import { createQueues } from '@/worker/queues';
@@ -49,6 +50,11 @@ async function main() {
       case 'reindex-search': {
         const result = await reindexAllMovies();
         logger.info(result, 'reindex-search completed');
+        break;
+      }
+      case 'seed-demo': {
+        const result = await seedDemoCatalog();
+        logger.info(result, 'seed-demo completed');
         break;
       }
       case 'enqueue-bulk': {
