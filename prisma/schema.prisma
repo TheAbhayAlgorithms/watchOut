@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleType {
+  cast
+  crew
+}
+
+enum OfferType {
+  sub
+  free
+  rent
+  buy
+}
+
+enum PlatformType {
+  subscription
+  free
+  transactional
+  mixed
+}
+
+model Movie {
+  id                  Int      @id @default(autoincrement())
+  tmdbId              Int      @unique @map("tmdb_id")
+  imdbId              String?  @map("imdb_id")
+  title               String
+  originalTitle       String   @map("original_title")
+  slug                String
+  year                Int?
+  releaseDate         DateTime? @map("release_date")
+  runtime             Int?
+  synopsis            String   @default("")
+  posterPath          String?  @map("poster_path")
+  backdropPath        String?  @map("backdrop_path")
+  originalLanguage    String   @default("en") @map("original_language")
+  languages           String[] @default([])
+  countries           String[] @default([])
+  popularity          Float    @default(0)
+  voteAverage         Float    @default(0) @map("vote_average")
+  voteCount           Int      @default(0) @map("vote_count")
+  imdbRating          Float?   @map("imdb_rating")
+  rottenTomatoesScore Int?     @map("rotten_tomatoes_score")
+  trailerUrl          String?  @map("trailer_url")
+  similarTmdbIds      Int[]    @default([]) @map("similar_tmdb_ids")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  genres       MovieGenre[]
+  cast         MovieCast[]
+  availability Availability[]
+
+  @@index([imdbId])
+  @@index([year])
+  @@index([popularity(sort: Desc)])
+  @@index([title])
+  @@map("movies")
+}
+
+model Genre {
+  id     Int    @id @default(autoincrement())
+  tmdbId Int    @unique @map("tmdb_id")
+  name   String
+  slug   String @unique
+
+  movies MovieGenre[]
+
+  @@map("genres")
+}
+
+model MovieGenre {
+  movieId Int @map("movie_id")
+  genreId Int @map("genre_id")
+
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+  @@index([genreId])
+  @@map("movie_genres")
+}
+
+model Person {
+  id          Int     @id @default(autoincrement())
+  tmdbId      Int     @unique @map("tmdb_id")
+  name        String
+  profilePath String? @map("profile_path")
+
+  credits MovieCast[]
+
+  @@map("people")
+}
+
+model MovieCast {
+  id        Int      @id @default(autoincrement())
+  movieId   Int      @map("movie_id")
+  personId  Int      @map("person_id")
+  roleType  RoleType @map("role_type")
+  character String?
+  job       String?
+  order     Int      @default(0)
+
+  movie  Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([movieId, roleType])
+  @@index([personId])
+  @@map("movie_cast")
+}
+
+model Platform {
+  id              Int          @id @default(autoincrement())
+  tmdbProviderId  Int          @unique @map("tmdb_provider_id")
+  name            String
+  slug            String       @unique
+  logoPath        String?      @map("logo_path")
+  type            PlatformType @default(mixed)
+  displayPriority Int          @default(100) @map("display_priority")
+
+  availability Availability[]
+
+  @@map("platforms")
+}
+
+model Availability {
+  id            Int       @id @default(autoincrement())
+  movieId       Int       @map("movie_id")
+  platformId    Int       @map("platform_id")
+  countryCode   String    @map("country_code") @db.VarChar(2)
+  offerType     OfferType @map("offer_type")
+  price         Decimal?  @db.Decimal(10, 2)
+  currency      String?   @db.VarChar(3)
+  deepLink      String?   @map("deep_link")
+  source        String    @default("tmdb_justwatch")
+  lastCheckedAt DateTime  @default(now()) @map("last_checked_at")
+
+  movie    Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([movieId, platformId, countryCode, offerType])
+  @@index([countryCode, platformId])
+  @@index([movieId, countryCode])
+  @@index([lastCheckedAt])
+  @@map("availability")
+}
+
+model SyncLog {
+  id             Int       @id @default(autoincrement())
+  jobType        String    @map("job_type")
+  status         String
+  itemsProcessed Int       @default(0) @map("items_processed")
+  startedAt      DateTime  @default(now()) @map("started_at")
+  finishedAt     DateTime? @map("finished_at")
+  errorSummary   String?   @map("error_summary")
+
+  @@index([jobType, startedAt(sort: Desc)])
+  @@map("sync_logs")
+}
