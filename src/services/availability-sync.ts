@@ -4,6 +4,16 @@ import { logger } from '@/lib/logger';
 import { slugify } from '@/lib/slug';
 import { TmdbJustWatchProvider } from '@/providers/tmdb-availability';
 import { AvailabilityProvider, NormalizedOffer } from '@/providers/types';
+import { WatchmodeAvailabilityProvider } from '@/providers/watchmode-availability';
+
+export function getDefaultAvailabilityProvider(preferred?: string): AvailabilityProvider {
+  if (preferred === 'watchmode') return new WatchmodeAvailabilityProvider();
+  if (preferred === 'tmdb') return new TmdbJustWatchProvider();
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_READ_ACCESS_TOKEN && process.env.WATCHMODE_API_KEY) {
+    return new WatchmodeAvailabilityProvider();
+  }
+  return new TmdbJustWatchProvider();
+}
 
 export const DEFAULT_AVAILABILITY_COUNTRIES = ['IN', 'US', 'GB'];
 

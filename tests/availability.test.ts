@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
 import { normalizeTmdbWatchProviders } from '@/providers/tmdb-availability';
 import { AvailabilityProvider } from '@/providers/types';
+import { normalizeWatchmodeSources } from '@/providers/watchmode-availability';
 import { upsertMovieAvailability } from '@/services/availability-sync';
 import { normalizeTmdbMovie, upsertNormalizedMovie } from '@/services/movie-ingestion';
 
@@ -50,6 +51,43 @@ describe('Phase 3: Availability Provider & Sync', () => {
     expect(offers.filter((o) => o.countryCode === 'GB')).toHaveLength(0);
     expect(offers.find((o) => o.providerExternalId === 8)?.offerType).toBe('sub');
     expect(offers.find((o) => o.providerExternalId === 100)?.offerType).toBe('free');
+  });
+
+  it('normalizes Watchmode sources across IN, US, GB with prices and deep links', () => {
+    const offers = normalizeWatchmodeSources(
+      [
+        {
+          source_id: 203,
+          name: 'Netflix',
+          type: 'sub',
+          region: 'IN',
+          web_url: 'https://www.netflix.com/title/70131314',
+          price: null,
+        },
+        {
+          source_id: 349,
+          name: 'Apple TV',
+          type: 'rent',
+          region: 'US',
+          web_url: 'https://tv.apple.com/movie/inception',
+          price: 3.99,
+        },
+        {
+          source_id: 999,
+          name: 'Excluded Region',
+          type: 'sub',
+          region: 'FR',
+          web_url: 'https://example.com',
+        },
+      ],
+      ['IN', 'US', 'GB']
+    );
+
+    expect(offers).toHaveLength(2);
+    expect(offers[0]?.countryCode).toBe('IN');
+    expect(offers[0]?.deepLink).toBe('https://www.netflix.com/title/70131314');
+    expect(offers[1]?.price).toBe(3.99);
+    expect(offers[1]?.offerType).toBe('rent');
   });
 
   it('syncs availability idempotently and removes stale offers on re-sync', async () => {

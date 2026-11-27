@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger';
 import { TmdbConfigError } from '@/providers/tmdb-client';
 import {
   DEFAULT_AVAILABILITY_COUNTRIES,
+  getDefaultAvailabilityProvider,
   syncAvailabilityForCatalog,
 } from '@/services/availability-sync';
 import { seedDemoCatalog } from '@/services/demo-seed';
@@ -40,9 +41,11 @@ async function main() {
           : DEFAULT_AVAILABILITY_COUNTRIES;
         const limitRaw = parseFlagValue(args, '--limit');
         const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 1000;
+        const providerFlag = parseFlagValue(args, '--provider');
         const result = await syncAvailabilityForCatalog({
           countries,
           limit: Number.isFinite(limit) && limit > 0 ? limit : 1000,
+          provider: getDefaultAvailabilityProvider(providerFlag),
         });
         logger.info(result, 'sync-availability completed');
         break;
