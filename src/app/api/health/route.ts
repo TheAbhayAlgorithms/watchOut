@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import { getRedisClient } from '@/lib/redis';
+import { getRedis } from '@/lib/redis';
 import { getMeiliClient } from '@/lib/meili';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +36,7 @@ export async function GET() {
     })(),
     (async () => {
       try {
-        const redis = getRedisClient();
+        const redis = getRedis();
         const pong = await redis.ping();
         checks.redis = { ok: pong === 'PONG' };
       } catch (err) {
