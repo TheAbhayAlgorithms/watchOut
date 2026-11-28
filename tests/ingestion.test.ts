@@ -28,8 +28,8 @@ const SAMPLE_DETAIL: TmdbMovieDetail = {
   vote_average: 8.4,
   vote_count: 35000,
   genres: [
-    { id: 9901, name: 'Action' },
-    { id: 9902, name: 'Science Fiction' },
+    { id: 9901, name: 'Test Action' },
+    { id: 9902, name: 'Test Science Fiction' },
   ],
   credits: {
     cast: [
